@@ -31,9 +31,6 @@ class JS3DMol(object):
     def display(self):
         ipyd.display(self.display_object)
 
-    def __repr__(self):
-        return self.display_object
-
     def set_positions(self,positions):
         jspos = json.dumps(positions.dumps.tolist())
         snippet = 'jspos = %s\nmove_and_render(myviewer,jspos)'%jspos
@@ -65,7 +62,7 @@ class JS3DMol(object):
 
     @staticmethod
     def _atoms_to_json(atomgroup):
-        atomsel = {'serial':atomgroup.indices.tolist()}
+        atomsel = {'serial':(atomgroup.indices+1).tolist()}
         return atomsel
 
 

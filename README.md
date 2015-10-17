@@ -1,12 +1,13 @@
 # CecamVizHack
 
 A hackathon project for the CECAM 2015 Macromolecular Simulation Workshop.
+
 Authors:
-Tom Newport
-Fiona Naughton
-Martin Vögele
-Kasia Ziolkowska
-Aaron Virshup
+- Tom Newport
+- Fiona Naughton
+- Martin Vögele
+- Kasia Ziolkowska
+- Aaron Virshup
 
 ![image demo](demo.png)
 

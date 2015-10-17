@@ -1,27 +1,26 @@
 import uuid
-
+import json
+import mdanalysis as mda
 from IPython.display import Javascript,HTML
 import IPython.display as ipyd
 
-#    HTML_HEADER = infile.read()
-
-#with open('3dmol.draggable.js') as infile:
-#    DRAGGABLE = infile.read()
-
-#TODO: make sure 3dmol.js is loaded exactly once
+load_script = HTML('<head><script src="http://3Dmol.csb.pitt.edu/build/3Dmol.js"></script></head>')
+ipyd.display(load_script)
 
 class JS3DMol(object):
     STYLES = 'stick line cross sphere cartoon VDW MS'.split()
 
-    def __init__(self,mol,width='800px',height='600px',
+    def __init__(self,universe,width='800px',height='600px',
                  div_id=None,display=True):
         if div_id is None:
             div_id = uuid.uuid4()
-        self.mol = mol
+        self.u = universe
         self.id = div_id
         self.width = width
         self.height = height
-        molstring = mol.write(format='sdf')
+        self.u.atoms.write('temp%s.pdb'%div_id)
+        with open('temp%s.pdb'%div_id,'r') as infile:
+            molstring = infile.read()
         self.html = HTML_HEADER%(self.id,self.id,self.id,self.id,
                                  width,height,self.id,
                                  molstring)
@@ -35,7 +34,12 @@ class JS3DMol(object):
     def __repr__(self):
         return self.display_object
 
-    def set_style(self,atomselection=None,style=None,spec=None):
+    def set_positions(self,positions):
+        jspos = json.dumps(positions.dumps.tolist())
+        snippet = 'jspos = %s\nmove_and_render(myviewer,jspos)'%jspos
+
+
+    def set_style(self,style=None,atomselection=None,spec=None):
         if spec is None: spec={}
         if style not in self.STYLES:
             raise KeyError('Style keys: %s'%(', '.join(self.STYLES)))
@@ -46,60 +50,26 @@ class JS3DMol(object):
         code = "myviewer.setStyle(%s,{%s:%s,'stick':{}});"%(atomselection,style,spec)
         self.run_js(code)
 
-    def center(self): self.run_js('myviewer.zoomTo();')
-
-    def move_atom(self,atom,newcoords):
-        code = """var atom = myviewer.selectedAtoms({'serial':%d})[0];
-        atom.x=%f;
-        atom.y=%f;
-        atom.z=%f;
-        myviewer.setStyle({'serial':%d},{'sphere':{'radius':0.75}});
-        """%(atom.idx,newcoords[0],newcoords[1],newcoords[2],atom.idx)
-        self.run_js(code)
-
+    def center(self):
+        self.run_js('myviewer.zoomTo();')
 
     def run_js(self,code,render=True):
         snippet= ["var myviewer = $3Dmol.viewers['%s'];"%self.id,
                   code]
         if render:
             snippet.append("myviewer.render();")
-
         command = '\n'.join(snippet)
         self.commands.append(command)
         ipyd.display(Javascript(command))
 
 
     @staticmethod
-    def _atoms_to_json(atoms):
-        idxlist = [atom.idx for atom in atoms]
-        atomsel = {'serial':idxlist}
+    def _atoms_to_json(atomgroup):
+        atomsel = {'serial':atomgroup.indices.tolist()}
         return atomsel
 
-    def add_frame(self,mol=None,show=True):
-        if mol is None: mol=self.mol
-        positions = ['tempx=%s;'%str(mol.positions[:,0].tolist()),
-                     'tempy=%s;'%str(mol.positions[:,1].tolist()),
-                     'tempz=%s;'%str(mol.positions[:,2].tolist())]
-
-        code = [positions,
-                'model = glviewer.getModel(0);',
-                'atoms = glviewer.selectAtoms();',
-                'atoms.forEach(positionUpdate);']
-
-        if show: pass
-        self.run_js(code='\n'.join(code),render=False)
 
 
-    def simulate_live(self,steps_per_update=1,
-                      snapshots=None,total_steps=float('inf'),
-                      method='propagate'):
-        nsteps = 0
-        propagator = getattr(self.mol,method)
-        while nsteps < total_steps:
-            propagator(nsteps = steps_per_update)
-            if snapshots is not None:
-                snapshots.store(self.mol)
-        self.add_frame(self.mol,show=True)
 
 
 
@@ -117,7 +87,7 @@ HTML_HEADER = """
 		});
 		glviewer.setBackgroundColor(0xffffff);
 
-		receptorModel = glviewer.addModel(data, "sdf");
+		receptorModel = glviewer.addModel(data, "pdb");
 
 		glviewer.zoomTo();
 		glviewer.render();

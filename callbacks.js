@@ -6,14 +6,18 @@ function zip(arrays) {
 }
 
 function move_and_render(viewer, atomSelection, positionList){
-    atoms = viewer.SelectedAtoms(atomSelection);
-    for (i = 0; i < atoms.length; i++) {
-        pos = positionList[i];
-        atom = atom[i];
-        atom.x = pos[0];
-        atom.y = pos[1];
-        atom.z = pos[2];
+    var oldatoms = viewer.selectedAtoms(atomSelection);
+    var newatoms = Array( oldatoms.length );
+    for (i = 0; i < oldatoms.length; i++) {
+	var atom = jQuery.extend({},oldatoms[i]);
+        atom.x = positionList[i][0];
+        atom.y = positionList[i][1];
+        atom.z = positionList[i][2];
+	newatoms[i] = atom;
     }
-
+    var model = viewer.getModel(0);
+    model.addFrame(newatoms);
+    viewer.setFrame( viewer.getFrames() );
+    viewer.render();
 }
 

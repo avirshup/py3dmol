@@ -1,6 +1,5 @@
 import uuid
 import json
-import mdanalysis as mda
 from IPython.display import Javascript,HTML
 import IPython.display as ipyd
 from ipywidgets import IntSlider,interactive, Box

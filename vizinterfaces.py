@@ -3,6 +3,15 @@ import json
 import mdanalysis as mda
 from IPython.display import Javascript,HTML
 import IPython.display as ipyd
+from ipywidgets import IntSlider,interactive, Box
+
+JSURL = 'http://3dmol.csb.pitt.edu/build/3Dmol.js'
+#JSURL = '3dmol_build/3Dmol.js'
+if not hasattr(ipyd,'_imported_3dmol'): #try to only import 3dmol.js once
+    importer = HTML('<head><script src="%s"></script></head>'%JSURL)
+    ipyd.display(importer)
+    ipyd._imported_3dmol = True
+
 
 class JS3DMol(object):
     STYLES = 'stick line cross sphere cartoon VDW MS'.split()
@@ -23,6 +32,7 @@ class JS3DMol(object):
                                  molstring)
         self.display_object = HTML(self.html)
         self.commands = []
+        self.nframes = 0
         if display: self.display()
 
     def get_input_file(self):
@@ -33,16 +43,22 @@ class JS3DMol(object):
     def display(self):
         ipyd.display(self.display_object)
 
-    def set_positions(self,positions):
+    def add_frame(self,positions=None):
+        if positions is None:
+            positions = self.get_current_positions() #implement in subclasses
         try:
             jspos = json.dumps(positions.tolist())
         except AttributeError:
             jspos = json.dumps(positions)
         snippet = 'var jspos = %s;\nmove_and_render(myviewer,{},jspos);'%jspos
         self.run_js(snippet)
+        self.nframes += 1
+        return self.nframes-1
 
+    def show_frame(self,framenum):
+        self.run_js('myviewer.setFrame(%d);'%framenum)
 
-    def set_style(self,style=None,atomselection=None,spec=None):
+    def set_style(self,style=None,atomselection=None,**spec):
         if spec is None: spec={}
         if style not in self.STYLES:
             raise KeyError('Style keys: %s'%(', '.join(self.STYLES)))
@@ -50,7 +66,7 @@ class JS3DMol(object):
             atomselection = self._atoms_to_json(atomselection)
         else:
             atomselection = '{}'
-        code = "myviewer.setStyle(%s,{%s:%s,'stick':{}});"%(atomselection,style,spec)
+        code = "myviewer.setStyle(%s,{%s:%s});"%(atomselection,style,spec)
         self.run_js(code)
 
     def center(self):
@@ -74,18 +90,42 @@ class JS3DMol(object):
     def create_controls(self):
         raise NotImplementedError()
 
+    def animate(self):
+        def slide(frame):
+            self.show_frame(frame)
+        s = IntSlider(min=0, max=self.nframes-1,value=0)
+        slider = interactive(slide, frame=s)
+        ipyd.display(slider)
+
 
 class MdaViz(JS3DMol):
+    def __init__(self,*args,**kwargs):
+        super(MdaViz,self).__init__(*args,**kwargs)
+        self.frame_map = {}
+        self.frames_ready = False
+
     @staticmethod
     def _atoms_to_json(atomgroup):
         atomsel = {'serial':(atomgroup.indices+1).tolist()}
         return atomsel
+
+    def get_current_positions(self):
+        return self.mol.atoms.positions
     
     def get_input_file(self):
         self.mol.atoms.write('temp%s.pdb'%self.id)
         with open('temp%s.pdb'%self.id,'r') as infile:
             molstring = infile.read()
         return molstring,'pdb'
+
+    def make_animation(self):
+        traj = self.mol.universe.trajectory
+        traj.rewind()
+        for iframe,frame in enumerate(traj):
+            framenum = self.add_frame()
+            self.frame_map[iframe] = framenum
+        self.frames_ready = True
+
 
 class PybelViz(JS3DMol):
     @staticmethod
@@ -106,8 +146,10 @@ dir_path = os.path.dirname(path)
 with open('%s/callbacks.js'%dir_path,'r') as infile:
     callbackjs = infile.read()
 
-HTML_HEADER = """ <head><script src='3dmol_build/3Dmol.js'></script></head>
-<script>""" + callbackjs +"""</script>
+
+HTML_HEADER = """ <head></head>
+<script>""" + callbackjs +"""
+</script>
 </head>
 <body>
 <script>

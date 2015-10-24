@@ -6,10 +6,11 @@ from ipywidgets import IntSlider,interactive, Box
 
 JSURL = 'http://3dmol.csb.pitt.edu/build/3Dmol.js'
 #JSURL = '3dmol_build/3Dmol.js'
-if not hasattr(ipyd,'_imported_3dmol'): #try to only import 3dmol.js once
+try: _imported_3dmol
+except NameError:  #try to only import 3dmol.js once
     importer = HTML('<head><script src="%s"></script></head>'%JSURL)
     ipyd.display(importer)
-    ipyd._imported_3dmol = True
+    _imported_3dmol = True
 
 
 class JS3DMol(object):
@@ -31,7 +32,7 @@ class JS3DMol(object):
                                  molstring)
         self.display_object = HTML(self.html)
         self.commands = []
-        self.nframes = 0
+        self.nframes = 1
         if display: self.display()
 
     def get_input_file(self):

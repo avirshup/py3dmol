@@ -4,7 +4,7 @@ dir_path = os.path.dirname(path)
 
 
 with open('%s/3DMol-min.js'%dir_path,'r') as infile:
-    min_3dmol = infile.read()
+    javascript_library = infile.read()
 
 with open('%s/callbacks.js'%dir_path,'r') as infile:
     callbackjs = infile.read()

@@ -1,8 +1,10 @@
 import uuid
 import json
+
 from IPython.display import Javascript,HTML
 import IPython.display as ipyd
-from ipywidgets import IntSlider,interactive, Box
+from ipywidgets import IntSlider,interactive
+
 from py3dmol import renderables
 
 try: _imported_3dmol
@@ -92,45 +94,4 @@ class JS3DMol(object):
         s = IntSlider(min=0, max=self.nframes-1,value=0)
         slider = interactive(slide, frame=s)
         ipyd.display(slider)
-
-
-class MdaViz(JS3DMol):
-    def __init__(self,*args,**kwargs):
-        super(MdaViz,self).__init__(*args,**kwargs)
-        self.frame_map = {}
-        self.frames_ready = False
-
-    @staticmethod
-    def _atoms_to_json(atomgroup):
-        atomsel = {'serial':(atomgroup.indices+1).tolist()}
-        return atomsel
-
-    def get_current_positions(self):
-        return self.mol.atoms.positions
-    
-    def get_input_file(self):
-        self.mol.atoms.write('temp%s.pdb'%self.id)
-        with open('temp%s.pdb'%self.id,'r') as infile:
-            molstring = infile.read()
-        return molstring,'pdb'
-
-    def make_animation(self):
-        traj = self.mol.universe.trajectory
-        traj.rewind()
-        for iframe,frame in enumerate(traj):
-            framenum = self.add_frame()
-            self.frame_map[iframe] = framenum
-        self.frames_ready = True
-
-
-class PybelViz(JS3DMol):
-    @staticmethod
-    def _atoms_to_json(atomlist):
-        idxes = [a.idx for a in atomlist]
-        atomsel = {'serial':idxes.tolist()}
-        return atomsel
-
-    def get_input_file(self):
-        instring = self.mol.write('pdb')
-        return instring,'pdb'
 

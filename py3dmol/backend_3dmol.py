@@ -3,12 +3,11 @@ import json
 from IPython.display import Javascript,HTML
 import IPython.display as ipyd
 from ipywidgets import IntSlider,interactive, Box
+from py3dmol import renderables
 
-JSURL = 'http://3dmol.csb.pitt.edu/build/3Dmol.js'
-#JSURL = '3dmol_build/3Dmol.js'
 try: _imported_3dmol
 except NameError:  #try to only import 3dmol.js once
-    importer = HTML('<head><script src="%s"></script></head>'%JSURL)
+    importer = HTML('<head><script>%s</script></head>'%renderables.javascript_library)
     ipyd.display(importer)
     _imported_3dmol = True
 
@@ -26,10 +25,7 @@ class JS3DMol(object):
 
         self.width = width
         self.height = height
-        self.html = HTML_HEADER%(self.id,self.id,format,
-                                 self.id,self.id,
-                                 width,height,self.id,
-                                 molstring)
+        self.html = renderables.viewer_html(self.id,format,width,height,molstring)
         self.display_object = HTML(self.html)
         self.commands = []
         self.nframes = 1
@@ -43,7 +39,7 @@ class JS3DMol(object):
     def display(self):
         ipyd.display(self.display_object)
 
-    def add_frame(self,positions=None):
+    def add_frame(self,positions=None,annotation=None):
         if positions is None:
             positions = self.get_current_positions() #implement in subclasses
         try:
@@ -137,47 +133,4 @@ class PybelViz(JS3DMol):
     def get_input_file(self):
         instring = self.mol.write('pdb')
         return instring,'pdb'
-        
 
-
-import os
-path = os.path.abspath(__file__)
-dir_path = os.path.dirname(path)
-with open('%s/callbacks.js'%dir_path,'r') as infile:
-    callbackjs = infile.read()
-
-
-HTML_HEADER = """ <head></head>
-<script>""" + callbackjs +"""
-</script>
-</head>
-<body>
-<script>
-	$(document).ready(function() {
-
-		moldata = data = $("#%s_data").val();
-		glviewer = $3Dmol.createViewer("%s", {
-			defaultcolors : $3Dmol.rasmolElementColors
-		});
-		glviewer.setBackgroundColor(0xffffff);
-
-		receptorModel = glviewer.addModel(data, "%s",{'keepH':true});
-
-		glviewer.zoomTo();
-                glviewer.setStyle({},{'stick':{}});
-		glviewer.render();
-
-        $3Dmol.viewers['%s']=glviewer;
-		})
-
-    //callback function to set atom positions (for creating a new frame)
-	function positionUpdate(atom,index,atomlist){
-        atom.x = tempx[index];atom.y=tempy[index];atom.z=tempz[index];
-	}
-</script>
-<div id="%s" style="width: %s; height:%s"></div>
-
-<textarea style="display: none;" id="%s_data">
-%s</textarea>
-</body>
-"""

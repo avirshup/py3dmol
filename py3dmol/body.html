@@ -1,0 +1,29 @@
+<body>
+<script>
+	$(document).ready(function() {
+
+		moldata = data = $("#%s_data").val();
+		glviewer = $3Dmol.createViewer("%s", {
+			defaultcolors : $3Dmol.rasmolElementColors
+		});
+		glviewer.setBackgroundColor(0xffffff);
+
+		receptorModel = glviewer.addModel(data, "%s",{'keepH':true});
+
+		glviewer.zoomTo();
+                glviewer.setStyle({},{'stick':{}});
+		glviewer.render();
+
+        $3Dmol.viewers['%s']=glviewer;
+		})
+
+    //callback function to set atom positions (for creating a new frame)
+	function positionUpdate(atom,index,atomlist){
+        atom.x = tempx[index];atom.y=tempy[index];atom.z=tempz[index];
+	}
+</script>
+<div id="%s" style="width: %s; height:%s"></div>
+
+<textarea style="display: none;" id="%s_data">
+%s</textarea>
+</body>

@@ -1,4 +1,8 @@
+import numpy as np
+
 from py3dmol.backend_3dmol import JS3DMol
+from py3dmol.common import VolumetricGrid
+
 
 class PybelViz(JS3DMol):
     """Visualize a pybel molecule"""
@@ -42,5 +46,34 @@ class MdaViz(JS3DMol):
             self.frame_map[iframe] = framenum
         self.frames_ready = True
 
-class CCLibViz(JS3DMol):
-    pass
+
+class PyQuante2Viz(JS3DMol):
+    """This takes a pyquante2 solver """
+    def __init__(self,*args,**kwargs):
+        super(PyQuante2Viz,self).__init__(*args,**kwargs)
+        if kwargs.get('display',True):
+            self.set_style('sphere',radius=0.3)
+
+    def get_input_file(self):
+        from cStringIO import StringIO
+        fobj = StringIO()
+        self.mol.geo.xyz(fobj=fobj)
+        xyzfile = fobj.getvalue()
+        fobj.close()
+        return xyzfile,'xyz'
+
+    def calc_orb_grid(self,orbnum,npts=50):
+        """Taken from the vieworb function pyquante2.graphics.mayavi"""
+        grid = VolumetricGrid( *self.mol.geo.bbox(),
+                              npoints=npts)
+        x, y, z = grid.xyzlist()
+        orb = self.mol.orbs[:,orbnum]
+
+        for c,bf in zip(orb,self.mol.bfs):
+            grid.fxyz += c*bf(x, y, z)
+        return grid
+
+    @property
+    def homo(self):
+        return self.mol.geo.nel()/2 - 1
+

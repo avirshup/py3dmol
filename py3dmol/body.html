@@ -15,6 +15,7 @@
 		glviewer.render();
 
         $3Dmol.viewers['%s']=glviewer;
+		glviewer.pyObjects = {};
 		})
 
     //callback function to set atom positions (for creating a new frame)

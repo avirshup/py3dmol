@@ -5,6 +5,8 @@ NOTE: Although this repository is being kept as a cool artifact from the CECAM 2
  * https://github.com/Autodesk/nbmolviz2d
  * https://github.com/Autodesk/nbmolviz3d
 
+___
+
 Py3DMol is a python package for dependency-free molecular visualization in iPython notebooks. Objects from MDAnalysis, MDTraj, OpenBabel, and CClib can be visualized and manipulated directly in a notebook notebook. The backend visualization library, 3DMol.js, is included, so no additional libraries are necessary - visualizations will function in any modern browser using javascript and WebGL.
 
 <img src="images/demo.png" width="200x" alt="Notebook image demo">
